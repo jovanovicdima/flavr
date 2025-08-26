@@ -1,8 +1,7 @@
+import { SessionRepository } from '$lib/repositories/SessionRepository';
 import { redirect, type Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	console.log('hey');
-
 	const isProtected = event.route.id?.startsWith('/(protected)');
 
 	if (!isProtected) {
@@ -15,10 +14,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, '/login');
 	}
 
-	// const userEmail = await redis.GET(getRedisUserSessionKey(sessionID));
-	const userEmail = null;
+	const user = await SessionRepository.getSession(sessionID);
 
-	if (!userEmail) {
+	if (!user) {
 		throw redirect(302, '/login');
 	}
 
@@ -26,6 +24,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, '/');
 	}
 
-	// event.locals.userEmail = userEmail;
+	event.locals.userEmail = user.email;
 	return await resolve(event);
 };

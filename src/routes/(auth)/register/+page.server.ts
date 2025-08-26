@@ -33,7 +33,7 @@ export const actions: Actions = {
 		}
 
 		// email in use
-		// const emailExists = await redis.EXISTS(getRedisUserKey(email));
+		const emailExists = await UserRepository.isEmailInUse(email);
 
 		if (emailExists) {
 			return fail(400, { email: true });
