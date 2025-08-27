@@ -74,44 +74,5 @@ export const actions: Actions = {
 		if (typeof rawTicketsJson !== 'string') {
 			return fail(400, { invalidTicket: true });
 		}
-
-		const tickets = parseTickets(rawTicketsJson);
-		if (!tickets || tickets.length === 0) {
-			return fail(400, { invalidTicket: true });
-		}
-
-		const multi = redis.MULTI();
-
-		const newEvent: NewEvent = {
-			title: title,
-			description: description,
-			datetime: dayjs(`${date}T${time}:00`).toISOString(),
-			location: location,
-			postedBy: locals.userEmail
-		};
-
-		if (image && image.size > 0 && image.name !== '') {
-			console.log(image);
-			const ext = image.name.split('.').pop();
-			const filename = randomUUID() + '.' + ext;
-
-			const uploadDir = path.join('static', 'eventImages');
-			if (!fs.existsSync(uploadDir)) {
-				fs.mkdirSync(uploadDir, { recursive: true });
-			}
-
-			// Save into static/eventImages/
-			const buffer = Buffer.from(await image.arrayBuffer());
-			const filePath = path.join(uploadDir, filename);
-			fs.writeFileSync(filePath, buffer);
-			newEvent.image = filename;
-		}
-
-		const eventID = await EventRepository.createEventMulti(newEvent, multi);
-		TicketRepository.createTicketsMulti(eventID, tickets, multi);
-
-		multi.EXEC();
-
-		return { success: true };
 	}
 };

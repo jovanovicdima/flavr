@@ -2,7 +2,6 @@ import type { Session } from '$lib/models/Session';
 import type { User } from '$lib/models/User';
 import mongoFlavr from '$lib/mongo';
 import dayjs from 'dayjs';
-import { UserRepository } from './UserRepository';
 
 const sessionsCollection = mongoFlavr.collection<Session>('sessions');
 
@@ -27,17 +26,36 @@ export class SessionRepository {
 	}
 
 	static async getSession(sessionID: string): Promise<User | null> {
-		const session = await sessionsCollection.findOne({
-			sessionID: sessionID,
-			expiresAt: { $gt: new Date() }
-		});
+		const userProjection: Record<keyof User, 1 | string> = {
+			_id: '$user._id',
+			email: '$user.email'
+		};
 
-		if (!session) {
-			return null;
-		}
+		const result = await sessionsCollection
+			.aggregate<User>([
+				{
+					$match: {
+						sessionID: sessionID,
+						expiresAt: { $gt: new Date() }
+					}
+				},
+				{
+					$lookup: {
+						from: 'users',
+						localField: 'email',
+						foreignField: 'email',
+						as: 'user'
+					}
+				},
+				{
+					$unwind: '$user'
+				},
+				{
+					$project: userProjection
+				}
+			])
+			.toArray();
 
-		const user = await UserRepository.getUserByEmail(session.email);
-
-		return user;
+		return result.length > 0 ? result[0] : null;
 	}
 }

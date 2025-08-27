@@ -2,18 +2,19 @@ import type { UserWithPassword, User } from '$lib/models/User';
 import mongoFlavr from '$lib/mongo';
 import bcrypt from 'bcrypt';
 
-const usersCollection = mongoFlavr.collection<UserWithPassword>('users');
+const usersWithPasswordCollection = mongoFlavr.collection<UserWithPassword>('users');
+const usersCollection = mongoFlavr.collection<User>('users');
 
 export class UserRepository {
 	static async createUser(email: string, password: string) {
-		await usersCollection.insertOne({
+		await usersWithPasswordCollection.insertOne({
 			email,
 			password: await bcrypt.hash(password, 10)
 		});
 	}
 
 	static async validateUser(email: string, password: string): Promise<boolean> {
-		const user: UserWithPassword | null = await usersCollection.findOne(
+		const user: UserWithPassword | null = await usersWithPasswordCollection.findOne(
 			{ email },
 			{ projection: { password: 1 } }
 		);
