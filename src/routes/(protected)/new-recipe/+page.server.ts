@@ -4,42 +4,77 @@ import dayjs from 'dayjs';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
+import type { IngredientItem } from '$lib/models/IngredientItem';
 
-function getStringField(form: FormData, key: string): string | null {
+function getFormField<T extends string | number | boolean>(
+	form: FormData,
+	key: string
+  ): T | null {
 	const value = form.get(key);
-	return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
+  
+	if (value === null) return null;
+  
+	// Handle string specifically
+	if (typeof value === "string") {
+	  const trimmed = value.trim();
+	  return (trimmed ? (trimmed as unknown as T) : null);
+	}
+  
+	// Handle Blob or other types if needed (optional)
+	return null;
+  }
 
-function parseTickets(json: string): NewTicket[] | null {
+  function parseSteps(json: string): string[] | null {
 	try {
 		const parsed = JSON.parse(json);
 
 		if (!Array.isArray(parsed)) return null;
 
-		const tickets: NewTicket[] = [];
+		const steps: string[] = [];
 
-		for (const t of parsed) {
+		for (const step of parsed) {
+			if (typeof step !== 'string') {
+				return null;
+			}
+
+			steps.push(step);
+		}
+
+		return steps;
+	} catch {
+		return null;
+	}
+}
+
+function parseIngredients(json: string): IngredientItem[] | null {
+	try {
+		const parsed = JSON.parse(json);
+
+		if (!Array.isArray(parsed)) return null;
+
+		const ingredients: IngredientItem[] = [];
+
+		for (const ingredient of parsed) {
 			if (
-				typeof t.name !== 'string' ||
-				typeof t.count === 'undefined' ||
-				typeof t.price === 'undefined' ||
-				isNaN(Number(t.count)) ||
-				isNaN(Number(t.price)) ||
-				!t.name.trim() ||
-				t.price === 0 ||
-				t.count === 0
+				typeof ingredient.ingredient !== 'string' ||
+				typeof ingredient.unit === 'string' ||
+				typeof ingredient.count === 'undefined' ||
+				isNaN(Number(ingredient.count)) ||
+				!ingredient.ingredient.trim() ||
+				!ingredient.unit.trinm() ||
+				ingredient.count === 0
 			) {
 				return null;
 			}
 
-			tickets.push({
-				name: t.name.trim(),
-				count: Number(t.count),
-				price: Number(t.price)
+			ingredients.push({
+				ingredient: ingredient.ingredient.trim(),
+				quantity: Number(ingredient.quantity),
+				unit: ingredient.unit.trim()
 			});
 		}
 
-		return tickets;
+		return ingredients;
 	} catch {
 		return null;
 	}
@@ -53,11 +88,10 @@ export const actions: Actions = {
 
 		const form = await request.formData();
 
-		const title = getStringField(form, 'title');
-		const description = getStringField(form, 'description');
-		const location = getStringField(form, 'location');
-		const date = getStringField(form, 'date');
-		const time = getStringField(form, 'time');
+		const name = getFormField<string>(form, 'name');
+		const preparationTimeInMinutes = getFormField<number>(form, 'preparationTimeInMinutes');
+		const difficulty = getFormField<string>(form, 'difficulty');
+		const notes = getFormField<string>(form, 'notes');
 
 		const rawImage = form.get('image');
 		let image: File | null = null;
@@ -66,13 +100,34 @@ export const actions: Actions = {
 			image = rawImage;
 		}
 
-		if (!title || !description || !location || !date || !time) {
+		console.log(name, preparationTimeInMinutes, difficulty, notes)
+
+		if (!name || !preparationTimeInMinutes || preparationTimeInMinutes < 1 || !difficulty) {
 			return fail(400, { invalidInfo: true });
 		}
 
-		const rawTicketsJson = form.get('ticketsJson');
-		if (typeof rawTicketsJson !== 'string') {
+		const rawStepsJson = form.get('stepsJson');
+		if (typeof rawStepsJson !== 'string') {
 			return fail(400, { invalidTicket: true });
 		}
+
+		const steps = parseSteps(rawStepsJson);
+		if (!steps || steps.length === 0) {
+			return fail(400, { invalidTicket: true });
+		}
+
+		const rawIngredientsJson = form.get('ingredientsJson');
+		if (typeof rawIngredientsJson !== 'string') {
+			console.log('raw ingred');
+			return fail(400, { invalidTicket: true });
+		}
+
+		const ingredients = parseIngredients(rawIngredientsJson);
+		if (!ingredients || ingredients.length === 0) {
+			console.log(ingredients);
+			return fail(400, { invalidTicket: true });
+		}
+
+		console.log(ingredients)
 	}
 };

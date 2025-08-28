@@ -1,44 +1,37 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import dayjs from 'dayjs';
+	import type { IngredientItem } from '$lib/models/IngredientItem';
+	import { UNITS } from '$lib/models/Units';
+	import { onMount } from 'svelte';
 
 	let name = $state('');
-	let description = $state('');
 	let preparationTimeInMinutes = $state<number | null>(null);
 	let difficulty = $state('');
-	let date = $state('');
-	let time = $state('');
-	let tickets: NewTicket[] = $state([]);
+	let ingredients: IngredientItem[] = $state([]);
 	let steps: string[] = $state([]);
 	let image: File | null = $state(null);
 	let notes = $state('');
 
-	$effect(() => {
-		if (date && time) {
-			const now = dayjs();
-			const selectedDatetime = dayjs(`${date} ${time}`);
-
-			if (selectedDatetime.isBefore(now)) {
-				date = now.format('YYYY-MM-DD');
-				time = now.format('HH:mm');
-			}
-		}
-	});
-
 	let isError = $derived.by(() => {
 		if (
 			name === '' ||
-			description === '' ||
-			(preparationTimeInMinutes !== null && preparationTimeInMinutes <= 0) ||
-			date === '' ||
-			time === '' ||
-			tickets.length < 1
+			preparationTimeInMinutes === null ||
+			preparationTimeInMinutes <= 0 ||
+			difficulty === '' ||
+			steps.length < 1 ||
+			ingredients.length < 1
 		) {
 			return true;
 		}
 
-		for (const ticket of tickets) {
-			if (ticket.name === '' || ticket.price === 0 || ticket.count === 0) {
+		for (const step of steps) {
+			if (step === '') {
+				return true;
+			}
+		}
+
+		for (const ingredientItem of ingredients) {
+			if (ingredientItem.ingredient === '' || ingredientItem.quantity <= 0) {
 				return true;
 			}
 		}
@@ -46,12 +39,12 @@
 		return false;
 	});
 
-	function addTicket() {
-		tickets.push({ name: '', count: 0, price: 0 });
+	function addIngredient() {
+		ingredients.push({ ingredient: '', quantity: 0, unit: 'g' });
 	}
 
-	function removeTicket(index: number) {
-		tickets.splice(index, 1);
+	function removeIngredient(index: number) {
+		ingredients.splice(index, 1);
 	}
 
 	function addStep() {
@@ -61,6 +54,20 @@
 	function removeStep(index: number) {
 		steps.splice(index, 1);
 	}
+
+	function autoResize(event: Event) {
+		const el = event.target as HTMLTextAreaElement;
+		el.style.height = 'auto'; // Reset height
+		el.style.height = el.scrollHeight + 'px'; // Set to scroll height
+	}
+
+	onMount(() => {
+		// Optionally resize all on load
+		document.querySelectorAll('textarea').forEach((el) => {
+			el.style.height = 'auto';
+			el.style.height = el.scrollHeight + 'px';
+		});
+	});
 </script>
 
 <form
@@ -68,12 +75,12 @@
 	use:enhance={() => {
 		// Reset reactive state after successful submission
 		name = '';
-		description = '';
 		preparationTimeInMinutes = null;
-		date = '';
-		time = '';
-		tickets = [];
+		difficulty = '';
+		ingredients = [];
+		steps = [];
 		image = null;
+		notes = '';
 	}}
 	class="mx-auto max-w-xl space-y-16 rounded-xl p-6 shadow-md"
 	enctype="multipart/form-data"
@@ -82,7 +89,7 @@
 		<h1 class="text-center text-2xl font-bold">Create Recipe</h1>
 		<input
 			type="text"
-			name="title"
+			name="name"
 			bind:value={name}
 			placeholder="Recipe Name"
 			class="w-full rounded border bg-background p-2 placeholder-gray-400"
@@ -94,74 +101,93 @@
 			name="preparationTimeInMinutes"
 			bind:value={preparationTimeInMinutes}
 			placeholder="⏲ Preparation time (minutes)"
-			class="w-full rounded border bg-background p-2 placeholder-gray-400"
+			class="w-full rounded border bg-background p-2"
+			min="0"
+			oninput={(event) => {
+				const el = event.target as HTMLInputElement;
+				const value = el.valueAsNumber;
+				preparationTimeInMinutes = isNaN(value) ? null : value;
+			}}
 			required
 		/>
 
-		<!-- TODO: Dropdown -->
-		<input
-			type="text"
+		<select
 			name="difficulty"
-			bind:value={difficulty}
 			placeholder="Difficulty"
-			class="w-full rounded border bg-background p-2 placeholder-gray-400"
+			bind:value={difficulty}
+			class="w-full rounded border bg-background p-2 invalid:text-gray-400"
 			required
-		/>
+		>
+			<option value="" disabled selected hidden>Select difficulty</option>
+			<option value="Very Easy">Very Easy</option>
+			<option value="Easy">Easy</option>
+			<option value="Medium">Medium</option>
+			<option value="Hard">Hard</option>
+			<option value="Very Hard">Very Hard</option>
+		</select>
 	</div>
 
-	<input type="hidden" name="ticketsJson" value={JSON.stringify(tickets)} />
-
+	<input type="hidden" name="ingredientsJson" value={JSON.stringify(ingredients)} />
 	<div>
 		<h2 class="mb-2 text-center text-2xl font-semibold">Ingredients</h2>
-		{#each tickets as ticket, i}
-			<div class="flex space-x-2">
-				<input
-					type="text"
-					bind:value={ticket.name}
-					placeholder="Ticket Name"
-					class="flex-1 rounded border bg-background p-2 placeholder-gray-400"
-				/>
-				<input
-					type="number"
-					inputmode="numeric"
-					bind:value={ticket.count}
-					placeholder="Count"
-					class="w-24 rounded border bg-background p-2 placeholder-gray-400"
-				/>
-				<input
-					type="number"
-					inputmode="numeric"
-					bind:value={ticket.price}
-					placeholder="Price"
-					class="w-24 rounded border bg-background p-2 placeholder-gray-400"
-				/>
-				<button
-					type="button"
-					onclick={() => removeTicket(i)}
-					class="cursor-pointer px-2 text-red-500">✕</button
-				>
-			</div>
-		{/each}
+		<div class="space-y-2">
+			{#each ingredients as ingredient, i}
+				<div class="flex space-x-1">
+					<input
+						type="text"
+						bind:value={ingredient.ingredient}
+						placeholder="Ingredient"
+						class="flex-1 rounded border bg-background p-2 placeholder-gray-400"
+					/>
+					<input
+						type="number"
+						inputmode="numeric"
+						min="0"
+						bind:value={ingredient.quantity}
+						oninput={(event) => {
+							const el = event.target as HTMLInputElement;
+							const value = el.valueAsNumber;
+							ingredient.quantity = isNaN(value) ? 0 : value;
+						}}
+						placeholder="Quantity"
+						class="w-24 rounded border bg-background p-2 placeholder-gray-400"
+					/>
+					<select bind:value={ingredient.unit} class="rounded border bg-background p-2">
+						<option disabled>Select unit</option>
+						{#each UNITS as { label, value }}
+							<option {value}>{label}</option>
+						{/each}
+					</select>
+					<button
+						type="button"
+						onclick={() => removeIngredient(i)}
+						class="cursor-pointer px-2 text-red-500">✕</button
+					>
+				</div>
+			{/each}
+		</div>
+
 		<button
 			type="button"
-			onclick={addTicket}
-			class="mt-2 cursor-pointer text-primary-500 hover:text-primary-600">+ Add Ticket</button
+			onclick={addIngredient}
+			class="mt-2 cursor-pointer text-primary-500 hover:text-primary-600">+ Add Ingredient</button
 		>
 	</div>
 
+	<input type="hidden" name="stepsJson" value={JSON.stringify(steps)} />
 	<div>
 		<h2 class="mb-2 text-center text-2xl font-semibold">Steps</h2>
-		<div class="space-y-1">
+		<div class="space-y-2">
 			{#each steps as _, i}
 				<div class="flex items-center gap-2 space-x-2">
-					{`Step ${i}:`}
-					<!-- TODO: add multiline input -->
-					<input
-						type="text"
+					{`Step ${i + 1}:`}
+					<textarea
 						bind:value={steps[i]}
 						placeholder="Step Description"
-						class="flex-1 rounded border bg-background p-2 placeholder-gray-400"
-					/>
+						class="flex-1 resize-none rounded border bg-background p-2 placeholder-gray-400"
+						rows="1"
+						oninput={autoResize}
+					></textarea>
 
 					<button
 						type="button"
@@ -207,7 +233,6 @@
 			placeholder="Notes"
 			rows="4"
 			class="w-full rounded border bg-background p-2 placeholder-gray-400"
-			required
 		></textarea>
 
 		<button
