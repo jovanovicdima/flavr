@@ -23,4 +23,17 @@ export const load = async ({ params, locals }) => {
 	};
 };
 
-export const actions: Actions = {};
+export const actions: Actions = {
+	delete: async ({ params, locals }) => {
+		const email = locals.userEmail;
+		if (!email) {
+			throw error(401, 'User not authenticated');
+		}
+
+		if (!params.id) {
+			throw error(400, 'Invalid request');
+		}
+
+		await RecipeRepository.deleteRecipe(params.id);
+	}
+};
