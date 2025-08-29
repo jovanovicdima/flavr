@@ -1,30 +1,28 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import dayjs from 'dayjs';
-import { randomUUID } from 'crypto';
-import path from 'path';
-import fs from 'fs';
 import type { IngredientItem } from '$lib/models/IngredientItem';
+import { randomUUID } from 'crypto';
+import { RecipeRepository } from '$lib/repositories/RecipeRepository';
+import path from 'path';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import type { NewRecipe } from '$lib/models/Recipe';
 
-function getFormField<T extends string | number | boolean>(
-	form: FormData,
-	key: string
-  ): T | null {
+function getFormField<T extends string | number | boolean>(form: FormData, key: string): T | null {
 	const value = form.get(key);
-  
+
 	if (value === null) return null;
-  
+
 	// Handle string specifically
-	if (typeof value === "string") {
-	  const trimmed = value.trim();
-	  return (trimmed ? (trimmed as unknown as T) : null);
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+		return trimmed ? (trimmed as unknown as T) : null;
 	}
-  
+
 	// Handle Blob or other types if needed (optional)
 	return null;
-  }
+}
 
-  function parseSteps(json: string): string[] | null {
+function parseSteps(json: string): string[] | null {
 	try {
 		const parsed = JSON.parse(json);
 
@@ -57,12 +55,12 @@ function parseIngredients(json: string): IngredientItem[] | null {
 		for (const ingredient of parsed) {
 			if (
 				typeof ingredient.ingredient !== 'string' ||
-				typeof ingredient.unit === 'string' ||
-				typeof ingredient.count === 'undefined' ||
-				isNaN(Number(ingredient.count)) ||
+				typeof ingredient.quantity !== 'number' ||
+				isNaN(ingredient.quantity) ||
+				typeof ingredient.unit !== 'string' ||
 				!ingredient.ingredient.trim() ||
-				!ingredient.unit.trinm() ||
-				ingredient.count === 0
+				ingredient.quantity === 0 ||
+				!ingredient.unit.trim()
 			) {
 				return null;
 			}
@@ -100,8 +98,6 @@ export const actions: Actions = {
 			image = rawImage;
 		}
 
-		console.log(name, preparationTimeInMinutes, difficulty, notes)
-
 		if (!name || !preparationTimeInMinutes || preparationTimeInMinutes < 1 || !difficulty) {
 			return fail(400, { invalidInfo: true });
 		}
@@ -128,6 +124,32 @@ export const actions: Actions = {
 			return fail(400, { invalidTicket: true });
 		}
 
-		console.log(ingredients)
+		const newRecipe: NewRecipe = {
+			name,
+			preparationTimeInMinutes,
+			difficulty,
+			ingredients,
+			steps,
+			notes: notes ?? undefined,
+			tags: []
+		};
+
+		if (image && image.size > 0 && image.name !== '') {
+			const ext = image.name.split('.').pop();
+			const filename = randomUUID() + '.' + ext;
+
+			const uploadDir = path.join('static', 'eventImages');
+			if (!existsSync(uploadDir)) {
+				mkdirSync(uploadDir, { recursive: true });
+			}
+
+			// Save into static/eventImages/
+			const buffer = Buffer.from(await image.arrayBuffer());
+			const filePath = path.join(uploadDir, filename);
+			writeFileSync(filePath, buffer);
+			newRecipe.image = filename;
+		}
+
+		await RecipeRepository.createRecipe(newRecipe, locals.userEmail);
 	}
 };

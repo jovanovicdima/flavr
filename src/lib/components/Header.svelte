@@ -6,7 +6,7 @@
 </script>
 
 <header>
-	<nav class="bg-lmao-500 flex w-full items-center justify-between px-8 py-2">
+	<nav class="flex w-full items-center justify-between px-8 py-2">
 		<div>
 			<a href="/" class="text-4xl">flavr</a>
 		</div>
@@ -15,13 +15,13 @@
 			<div class="hidden items-center gap-4 md:flex">
 				<a
 					href="/login"
-					class="border-text cursor-pointer rounded-xl border-2 px-6 py-2 select-none"
+					class="cursor-pointer rounded-xl border-2 border-text px-6 py-2 select-none"
 				>
 					Log in
 				</a>
 				<a
 					href="/register"
-					class="border-primary-500 bg-primary-500 text-background cursor-pointer rounded-xl border-2 px-4 py-2 select-none"
+					class="cursor-pointer rounded-xl border-2 border-primary-500 bg-primary-500 px-4 py-2 text-background select-none"
 				>
 					Register
 				</a>
@@ -30,14 +30,14 @@
 			<div class="flex items-center gap-4 md:hidden">
 				<a
 					href="/login"
-					class="border-text flex cursor-pointer items-center justify-center rounded-xl border-2 p-2 select-none"
+					class="flex cursor-pointer items-center justify-center rounded-xl border-2 border-text p-2 select-none"
 					aria-label="Log in"
 				>
 					<LogIn class="h-6 w-6" />
 				</a>
 				<a
 					href="/register"
-					class="border-primary-500 bg-primary-500 text-background flex cursor-pointer items-center justify-center rounded-xl border-2 p-2 select-none"
+					class="flex cursor-pointer items-center justify-center rounded-xl border-2 border-primary-500 bg-primary-500 p-2 text-background select-none"
 					aria-label="Register"
 				>
 					<UserPlus class="h-6 w-6" />
@@ -47,13 +47,13 @@
 			<div class="flex items-center gap-4">
 				<a
 					href="/new-recipe"
-					class="text-text hidden cursor-pointer rounded-xl px-4 md:inline-block"
+					class="hidden cursor-pointer rounded-xl px-4 text-text md:inline-block"
 				>
 					Create new recipe
 				</a>
 				<a
 					href="/new-recipe"
-					class="text-text flex cursor-pointer items-center justify-center rounded-xl p-2 md:hidden"
+					class="flex cursor-pointer items-center justify-center rounded-xl p-2 text-text md:hidden"
 					aria-label="Create new event"
 				>
 					<Plus class="h-6 w-6" />
@@ -62,14 +62,14 @@
 				<form action="/logout" method="POST" use:enhance>
 					<button
 						type="submit"
-						class="border-text hidden cursor-pointer rounded-xl border-2 px-6 py-2 select-none md:inline-block"
+						class="hidden cursor-pointer rounded-xl border-2 border-text px-6 py-2 select-none md:inline-block"
 					>
 						Log out
 					</button>
 
 					<button
 						type="submit"
-						class="border-text flex cursor-pointer items-center justify-center rounded-xl border-2 p-2 select-none md:hidden"
+						class="flex cursor-pointer items-center justify-center rounded-xl border-2 border-text p-2 select-none md:hidden"
 						aria-label="Log out"
 					>
 						<LogOut class="h-6 w-6" />

@@ -1,56 +1,29 @@
 <script lang="ts">
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcomeFallback from '$lib/images/svelte-welcome.png';
+	import RecipeCard from '$lib/components/RecipeCard.svelte';
+	import type { PageProps } from './$types';
+
+	let { data }: PageProps = $props();
+
+	const recipes = data.recipes;
 </script>
 
 <svelte:head>
 	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
 </svelte:head>
+<section class="my-4 flex w-full flex-col items-center">
+	<div class="mx-2 min-h-screen w-full space-y-4">
+		<h1 class="text-center text-3xl font-bold">Upcoming Events</h1>
 
-<section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcomeFallback} alt="Welcome" />
-			</picture>
-		</span>
-
-		to your new<br />SvelteKit appp
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
+		<div class="grid grid-cols-[repeat(auto-fill,minmax(275px,1fr))] gap-4 px-4">
+			{#each recipes as recipe}
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+				<RecipeCard {recipe} />
+			{/each}
+		</div>
+	</div>
 </section>
-
-<style>
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
-	}
-
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
-	}
-</style>

@@ -57,12 +57,11 @@
 
 	function autoResize(event: Event) {
 		const el = event.target as HTMLTextAreaElement;
-		el.style.height = 'auto'; // Reset height
-		el.style.height = el.scrollHeight + 'px'; // Set to scroll height
+		el.style.height = 'auto';
+		el.style.height = el.scrollHeight + 'px';
 	}
 
 	onMount(() => {
-		// Optionally resize all on load
 		document.querySelectorAll('textarea').forEach((el) => {
 			el.style.height = 'auto';
 			el.style.height = el.scrollHeight + 'px';
@@ -73,7 +72,6 @@
 <form
 	method="POST"
 	use:enhance={() => {
-		// Reset reactive state after successful submission
 		name = '';
 		preparationTimeInMinutes = null;
 		difficulty = '';
